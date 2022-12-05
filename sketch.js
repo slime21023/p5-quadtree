@@ -12,8 +12,8 @@ class Boundary {
   }
 
   contains(point) {
-    return (point.x >= this.topLeft.x ) && (point.x < this.bottomRight.x) 
-        && (point.y >= this.topLeft.y) && (point.y < this.bottomRight.y)
+    return (point.x >= this.topLeft.x) && (point.x < this.bottomRight.x)
+      && (point.y >= this.topLeft.y) && (point.y < this.bottomRight.y)
   }
 
   intersects(boundary) {
@@ -36,31 +36,32 @@ class QuadTree {
     if (!this.boundary.contains(point)) {
       return false;
     }
-    
-    if (this.points.length < this.capacity - 1) {
+
+    if (this.divided) {
+      this.northwest.insert(point);
+      this.northeast.insert(point);
+      this.southwest.insert(point);
+      this.southeast.insert(point);
+    }
+
+    if (!this.divided && this.points.length == this.capacity - 1) {
+      this.divide();
+      for (let p of this.points) {
+        this.northwest.insert(p);
+        this.northeast.insert(p);
+        this.southwest.insert(p);
+        this.southeast.insert(p);
+      }
+      this.points = [];
+      this.insert(point);
+    }
+
+    if (!this.divided && this.points.length < this.capacity - 1) {
       this.points.push(point);
       return true;
     }
-    else {
-      if (!this.divided) {
-        this.divide();
-      }
-      const { topLeft, bottomRight } = this.boundary;
-      const centerX = (topLeft.x + bottomRight.x) / 2;
-      const centerY = (topLeft.y + bottomRight.y) / 2;
-      if (point.x < centerX && point.y < centerY ) {
-        return this.northwest.insert(point);
-      }
-      else if (point.x >= centerX && point.y < centerY ) {
-        return this.northeast.insert(point);
-      }
-      else if (point.x < centerX && point.y >= centerY) {
-        return this.southwest.insert(point);
-      }
-      else if (point.x >= centerX && point.y >= centerY) {
-        return this.southeast.insert(point);
-      }
-    }
+
+    return true;
   }
 
   divide() {
@@ -81,22 +82,52 @@ class QuadTree {
 
   query(range) {
     let found = [];
-    if (this.boundary.intersects(range)) {
+    if (!this.boundary.intersects(range)) {
+      return found;
+    }
+
+    if (!this.divided) {
       for (let p of this.points) {
         if (range.contains(p)) found.push(p);
       }
-
-      if (this.divided) {
-        found.concat(this.northwest.query(range));
-        found.concat(this.northeast.query(range));
-        found.concat(this.southwest.query(range));
-        found.concat(this.southeast.query(range));
-      }
     }
+
+    if (this.divided) {
+      return found.concat(
+        this.northwest.query(range),
+        this.northeast.query(range),
+        this.southwest.query(range),
+        this.southeast.query(range)
+      );
+    }
+
     return found;
   }
 
+  has(point) {
+    if (!this.boundary.contains(point)) {
+      return false;
+    }
+
+    if (this.divided) {
+      return (this.northwest.has(point) ||
+        this.northeast.has(point) ||
+        this.southwest.has(point) ||
+        this.southeast.has(point)
+      );
+    }
+
+    for (let p of this.points) {
+      if (point.x == p.x && point.y == p.y) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   show() {
+    rectMode(CORNER);
     stroke(255);
     noFill();
     strokeWeight(1);
@@ -106,7 +137,7 @@ class QuadTree {
     let y = topLeft.y;
     let w = bottomRight.x - x;
     let h = bottomRight.y - y;
-    
+
     rect(x, y, w, h);
     for (let p of this.points) {
       strokeWeight(2);
@@ -124,10 +155,10 @@ class QuadTree {
 let qdtree;
 
 function setup() {
-  createCanvas(600, 600);
+  createCanvas(800, 800);
   background(0);
   const topLeft = new Point(0, 0);
-  const bottomRight = new Point(600, 600);
+  const bottomRight = new Point(800, 800);
   const boundary = new Boundary(topLeft, bottomRight);
 
   qdtree = new QuadTree(boundary, 4);
@@ -139,7 +170,40 @@ function setup() {
   }
 }
 
-function draw(){
+function draw() {
   background(0);
+  if (mouseIsPressed && mouseButton === LEFT) {
+    for (let i = 0; i < 4; i++) {
+      let x = randomGaussian(mouseX - 5, mouseX + 5);
+      let y = randomGaussian(mouseY - 5, mouseY + 5);
+
+      let p = new Point(x, y);
+      if (!qdtree.has(p)) {
+        qdtree.insert(p);
+      }
+    }
+  }
+
+  if (mouseIsPressed && mouseButton === RIGHT) {
+    strokeWeight(1);
+    stroke(0, 255, 0);
+    rectMode(CENTER);
+
+    let boundary = new Boundary(
+      new Point(mouseX - 25, mouseY - 25),
+      new Point(mouseX + 25, mouseY + 25)
+    )
+
+    if (mouseX < width && mouseY < height) {
+      rect(mouseX, mouseY, 50, 50);
+
+      let points = qdtree.query(boundary);
+      for (let p of points) {
+        strokeWeight(5);
+        point(p.x, p.y);
+      }
+    }
+  }
+
   qdtree.show();
 }
