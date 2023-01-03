@@ -155,7 +155,7 @@ class QuadTree {
 let qdtree;
 
 function setup() {
-  createCanvas(800, 800);
+  createCanvas(650, 650);
   background(0);
   const topLeft = new Point(0, 0);
   const bottomRight = new Point(800, 800);
@@ -168,18 +168,24 @@ function setup() {
     let p = new Point(x, y);
     qdtree.insert(p);
   }
+
+  drawDiagram()
 }
 
 function draw() {
   background(0);
-  if (mouseIsPressed && mouseButton === LEFT) {
-    for (let i = 0; i < 4; i++) {
-      let x = randomGaussian(mouseX - 5, mouseX + 5);
-      let y = randomGaussian(mouseY - 5, mouseY + 5);
 
-      let p = new Point(x, y);
-      if (!qdtree.has(p)) {
-        qdtree.insert(p);
+  if (mouseIsPressed && mouseButton === LEFT) {
+    if (mouseX < 650 && mouseY < 650) {
+
+      for (let i = 0; i < 4; i++) {
+        let x = random( -100, 100);
+        let y = random( -100, 100);
+
+        let p = new Point(mouseX + x, mouseY + y);
+        if (!qdtree.has(p)) {
+          qdtree.insert(p);
+        }
       }
     }
   }
@@ -206,4 +212,48 @@ function draw() {
   }
 
   qdtree.show();
+}
+
+
+function drawDiagram() {
+  const bfs = (tree) => {
+    if(tree.divided == false) {
+      return [tree.points.length];
+    }
+    else {
+      let cache = [];
+      cache = cache.concat(bfs(tree.northeast));
+      cache = cache.concat(bfs(tree.northwest));
+      cache = cache.concat(bfs(tree.southeast));
+      cache = cache.concat(bfs(tree.southwest));
+      return cache;
+    }
+  }
+
+  let histoCache = bfs(qdtree);
+  let x = [];
+  for (i = 0; i < histoCache.length; i++) {
+    x = x.concat(Array(histoCache[i]).fill(i))
+  }
+  Plotly.newPlot('histogram', [{ 
+    x, 
+    type: 'histogram',
+    xbins: { 
+      end: histoCache.length, 
+      size: 1, 
+      start: 0
+    }
+  }]);
+
+  Plotly.newPlot('cdf', [{
+    x, 
+    type: 'histogram',
+    xbins: { 
+      end: histoCache.length, 
+      size: 1, 
+      start: 0
+    },
+    cumulative: {enabled: true}
+  }])
+
 }

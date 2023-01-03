@@ -6,12 +6,37 @@
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/p5@1.5.0/lib/p5.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
   <script src="./sketch.js"></script>
   <title>p5-quadtree</title>
+
+  <style>
+    body {
+      margin:1.5%;
+      display: grid;
+      grid-template-columns: minmax(45%, 45%) 1fr;
+    }
+    .diagram {
+      display: flow;
+      max-height: 95vh;
+      margin: 1.5%;
+    }
+  </style>
 </head>
 
 <body>
-  <main oncontextmenu="return false;"></main>
+  <div>
+    <h1>QuadTree</h1>
+    <main oncontextmenu="return false;"></main>
+  </div>
+  
+  <div class="diagram">
+    <button onclick="drawDiagram()">update</button>
+    <h1>Histogram</h1>
+    <div id="histogram"></div>
+    <h1>CDF</h1>
+    <div id="cdf"></div>
+  </div>
 </body>
 
 </html>
